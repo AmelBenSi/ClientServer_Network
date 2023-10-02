@@ -2,6 +2,7 @@ import socket
 import threading
 import pickle
 import json
+import ast
 import xml.etree.ElementTree as ET
 from cryptography.fernet import Fernet
 
@@ -31,7 +32,10 @@ def handle_dict(received_data):
     if header == "SEND_DICTIONARY":
 
         if data_format == "BINARY":
-            original_data = pickle.loads(serialized_data).decode()
+            binary_data = ast.literal_eval(serialized_data)
+            print("[BINARY DATA]", type(binary_data), binary_data)
+            original_data = pickle.loads(binary_data)
+            pickle.dump(original_data, open("save.txt", "wb"))
 
         elif data_format == "JSON":
             original_data = json.loads(serialized_data)
