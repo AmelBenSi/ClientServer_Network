@@ -2,16 +2,19 @@ import socket
 import pickle
 import json
 from dict2xml import dict2xml
-from cryptography.fernet import Fernet
+from Crypto.Cipher import AES
 
 PORT = 8080
-HOST = socket.gethostbyname(socket.gethostname())
+HOST = "localhost"
 SERVER_ADDR = (HOST, PORT)
+KEY = b"TheNeuralNineKey"
+NONCE = b"TheNeuralNineNce"
 
 
 # This function should set a dictionary to binary, JSON or XML format, and
 # send it to the server
 def send_dictionary(socket, dictionary, data_format):
+    serialized_dict = ""
     if data_format == "BINARY":
         serialized_dict = pickle.dumps(dictionary)
     elif data_format == "JSON":
@@ -22,26 +25,22 @@ def send_dictionary(socket, dictionary, data_format):
     socket.send(f"SEND_DICTIONARY|{data_format}|{serialized_dict}".encode())
 
 
-"""
 # This function should provide the option to encrypt a file, and
 # send it to the server
-def send_file(socket, file, encrypt=False):
-    # opening a file to encrypt
+def send_file(socket, file, encrypt):
+
+    # opening a file
     with open(file, "rb") as file:
-        original_file = file.read()
+        data = file.read()
 
         if encrypt:
-            # key generation
-            key = Fernet.generate_key()
-
-            # using the generated key
-            fernet = Fernet(key)
+            cipher = AES.new(KEY, AES.MODE_EAX, NONCE)
 
             # encrypting the file
-            encrypted_file = fernet.encrypt(original_file)
-
-    socket.send(f"SEND_FILE:{file}|{encrypt}|{encrypted_data.decode()}".encode())
-"""
+            data = cipher.encrypt(data)
+            socket.send(f"SEND_FILE|{encrypt}|{data}".encode())
+        else:
+            socket.send(f"SEND_FILE|{encrypt}|{data.decode()}".encode())
 
 
 def connect():
@@ -54,20 +53,16 @@ def connect():
         "month": "September",
         "day": 28
     }
-
-    # Call send_dictionary function to send the dictionary to the server
-    send_dictionary(client_socket, dictionary, "XML")
+    command = input("[SENT_ITEM] Are you sending a DICTIONARY OR a FILE? ")
+    if command == "DICTIONARY":
+        # Call send_dictionary function to send a dictionary to the server
+        send_dictionary(client_socket, dictionary, "XML")
+    if command == "FILE":
+        # Call send_file function to send a file to the server
+        send_file(client_socket, "file_example.txt", encrypt=True)
 
     client_socket.close()
-"""
-    # Call send_file function to send a file to the server
-    send_file(client_socket, "file_example.txt", encrypt=True)
-"""
+
 
 if __name__ == "__main__":
     connect()
-
-
-
-
-
