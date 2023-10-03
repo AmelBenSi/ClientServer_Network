@@ -1,0 +1,27 @@
+import unittest
+from unittest import mock
+from client import connect
+from cryptography.fernet import Fernet
+
+
+class TestSocketClient(unittest.TestCase):
+    @mock.patch("socket.socket")
+    def test_send_text_file(self, mock_socket):
+        client = connect("localhost", 8080)
+    
+        mock_server_socket = mock_socket.return_value
+        
+        with open("text_file.txt", "r") as f:
+            text_file_contents = f.read()
+            
+            cipher = Fernet(client.encryption_key)
+            expected_encrypted_contents = cipher.encrypt(text_file_contents.encode())
+           
+            client.send_text_file("text_file.txt", encrypt=True)
+            
+            mock_server_socket.sendall.assert_called_once_with(expected_encrypted_contents)
+          
+            client.close()
+
+    if __name__ == "__main__":
+        unittest.main()
