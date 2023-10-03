@@ -8,46 +8,42 @@ from cryptography.fernet import Fernet
 
 
 PORT = 8080
-HOST = socket.gethostbyname(socket.gethostname())
+HOST = ""
+#HOST = socket.gethostbyname(socket.gethostname())
 SERVER_ADDR = (HOST, PORT)
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(SERVER_ADDR)
 
 
-def handle_dict(received_data):
+def handle_dict(received_dict):
 
-    input_data = received_data.decode()
-    print(input_data)
-    first_split = input_data.split("|")
-    print(first_split)
-    header = first_split[0]
-    data_format = first_split[1]
-    serialized_data = first_split[2]
-    print(first_split)
-    print(header)
-    print(data_format)
-    print(serialized_data)
+    decoded_dict = received_dict.decode()
+    split = decoded_dict.split("|")
+    header = split[0]
+    data_format = split[1]
+    serialized_dict = split[2]
+    print(header, data_format, serialized_dict, sep="\n")
 
     if header == "SEND_DICTIONARY":
 
         if data_format == "BINARY":
-            binary_data = ast.literal_eval(serialized_data)
-            print("[BINARY DATA]", type(binary_data), binary_data)
-            original_data = pickle.loads(binary_data)
-            pickle.dump(original_data, open("save.txt", "wb"))
+            binary_dict = ast.literal_eval(serialized_dict)
+            original_dict = pickle.loads(binary_dict)
 
         elif data_format == "JSON":
-            original_data = json.loads(serialized_data)
+            original_dict = json.loads(serialized_dict)
 
         elif data_format == "XML":
-            root = ET.fromstring(serialized_data)
-            original_data = {child.tag: child.text for child in root}
+            root = ET.fromstring(serialized_dict)
+            original_dict = {child.tag: child.text for child in root}
 
         else:
             raise ValueError("Received data is neither valid JSON, binary, nor XML.")
 
-        print(f"[PRINT_TO_SCREEN] Dictionary sent in format {data_format}: {original_data}")
+        print(f"[PRINT_TO_SCREEN] Dictionary was sent in {data_format} format: {original_dict}")
+        with open("print_to_file.txt", "w") as file:
+            file.write(str(original_dict))
 
 
 # This function should handle all the communications between the client and the server

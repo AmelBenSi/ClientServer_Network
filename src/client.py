@@ -2,7 +2,6 @@ import socket
 import pickle
 import json
 from dict2xml import dict2xml
-#import xml.etree.ElementTree as ET
 from cryptography.fernet import Fernet
 
 PORT = 8080
@@ -18,17 +17,9 @@ def send_dictionary(socket, dictionary, data_format):
     elif data_format == "JSON":
         serialized_dict = json.dumps(dictionary)
     elif data_format == "XML":
-        serialized_dict = dict2xml(dictionary).decode()
+        serialized_dict = dict2xml(dictionary, wrap='root', indent="   ")
 
     socket.send(f"SEND_DICTIONARY|{data_format}|{serialized_dict}".encode())
-
-
-        #root = ET.Element("root")
-        #for key, value in dictionary.items():
-        #    ET.SubElement(root, key).text = value
-        #serialized_dict = ET.tostring(root).decode()
-        #"""
-
 
 
 """
@@ -65,7 +56,7 @@ def connect():
     }
 
     # Call send_dictionary function to send the dictionary to the server
-    send_dictionary(client_socket, dictionary, "BINARY")
+    send_dictionary(client_socket, dictionary, "XML")
 
     client_socket.close()
 """
