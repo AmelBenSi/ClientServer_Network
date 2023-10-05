@@ -5,13 +5,18 @@ import json
 import ast
 import xml.etree.ElementTree as ET
 from Crypto.Cipher import AES
+import tqdm
 
 
 PORT = 8080
 HOST = ""
 SERVER_ADDR = (HOST, PORT)
-KEY = b"TheNeuralNineKey"
-NONCE = b"TheNeuralNineNce"
+BUFFER = 1024
+
+# Insert your own key
+KEY = b"YourOwnSecretKey"
+# Insert your own nonce
+NONCE = b"YourOwnSecretNce"
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind(SERVER_ADDR)
@@ -40,16 +45,16 @@ def handle_dict(data_format, serialized_dict):
 
 def handle_file(encryption, file_data):
 
-    if encryption == "False":
+    if encryption == "FALSE":
         with open("file_server.txt", "w") as file:
             file.write(file_data)
-        print(f"[PRINT_TO_SCREEN] The content of a file: {file_data}")
+        print(f"[PRINT_TO_SCREEN] Content of the file: {file_data}")
 
-    elif encryption == "True":
+    elif encryption == "TRUE":
         cipher = AES.new(KEY, AES.MODE_EAX, NONCE)
         binary_data = ast.literal_eval(file_data)
         decrypt_data = cipher.decrypt(binary_data).decode()
-        print(f"[PRINT_TO_SCREEN] The content of a file sent encrypted: {decrypt_data}")
+        print(f"[PRINT_TO_SCREEN] Content of the encrypted file: {decrypt_data}")
         with open("file_server.txt", "w") as dec_file:
             dec_file.write(decrypt_data)
 
@@ -75,11 +80,19 @@ def handle_client(client_socket, client_addr):
 
     print(f"[NEW CONNECTION] {client_addr} is connected to the server")
 
-    connected = True
-    while connected:
-        received_data = client_socket.recv(1024)
-        handle_data(received_data)
-        connected = False
+    # Receive the size of sent data
+    data_size = int(client_socket.recv(BUFFER).decode())
+    progress = tqdm.tqdm(unit="B", unit_scale=True, unit_divisor=1000, total=int(data_size))
+
+    received_data = b""
+
+    while True:
+        chunk_of_data = client_socket.recv(BUFFER)
+        received_data += chunk_of_data
+        progress.update(BUFFER)
+        if len(chunk_of_data) < BUFFER:
+            break
+    handle_data(received_data)
 
 
 # This function should handle the connection with the client
