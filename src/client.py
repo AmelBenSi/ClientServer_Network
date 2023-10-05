@@ -1,10 +1,11 @@
 import socket
+import os
+import sys
 import pickle
 import json
 from dict2xml import dict2xml
 from Crypto.Cipher import AES
-import os
-import sys
+
 from samples.dict_sample import dictionary
 
 PORT = 8080
@@ -22,14 +23,25 @@ NONCE = b"YourOwnSecretNce"
 def send_dictionary(socket, dictionary, data_format):
     serialized_dict = ""
     dict_size = sys.getsizeof(dictionary)
-    if data_format == "BINARY":
-        serialized_dict = pickle.dumps(dictionary)
-    elif data_format == "JSON":
-        serialized_dict = json.dumps(dictionary)
-    elif data_format == "XML":
-        serialized_dict = dict2xml(dictionary, wrap='root', indent="   ")
     socket.send(str(dict_size).encode())
-    socket.send(f"SEND_DICTIONARY|{data_format}|{serialized_dict}".encode())
+
+    # B for BINARY
+    if data_format == "B":
+        serialized_dict = pickle.dumps(dictionary)
+        socket.send(f"SEND_D|{data_format}".encode())
+        socket.sendall(serialized_dict)
+
+    # J for JSON
+    elif data_format == "J":
+        serialized_dict = json.dumps(dictionary)
+        socket.send(f"SEND_D|{data_format}".encode())
+        socket.sendall(serialized_dict.encode())
+
+    # X for XML
+    elif data_format == "X":
+        serialized_dict = dict2xml(dictionary, wrap='root', indent="   ")
+        socket.send(f"SEND_D|{data_format}".encode())
+        socket.sendall(serialized_dict.encode())
 
 
 # This function should provide the option to encrypt a file, and
@@ -40,19 +52,23 @@ def send_file(socket, file, encrypt):
     with open(file, "rb") as f:
         data = f.read()
 
-        if encrypt == "TRUE":
+        # T for TRUE
+        if encrypt == "T":
             cipher = AES.new(KEY, AES.MODE_EAX, NONCE)
 
             # Encrypting the file
             encrypted_data = cipher.encrypt(data)
             file_size = os.path.getsize(file)
             socket.send(str(file_size).encode())
-            socket.sendall(f"SEND_FILE|{encrypt}|{encrypted_data}".encode())
+            socket.send(f"SEND_F|{encrypt}".encode())
+            socket.send(encrypted_data)
 
-        elif encrypt == "FALSE":
+        # F for FALSE
+        elif encrypt == "F":
             file_size = os.path.getsize(file)
             socket.send(str(file_size).encode())
-            socket.sendall(f"SEND_FILE|{encrypt}|{data.decode()}".encode())
+            socket.send(f"SEND_F|{encrypt}".encode())
+            socket.send(data)
 
 
 def connect():
@@ -60,14 +76,17 @@ def connect():
     client_socket.connect(SERVER_ADDR)
 
     command = input("[SENT_ITEM] Are you sending a DICTIONARY OR a FILE (D/F)? \n> ")
+
     if command == "D":
-        data_format = input("[DATA_FORMAT] In which format are you sending the dictionary, BINARY, JSON or XML)? \n >")
+        data_format = input("[DATA_FORMAT] In which format are you sending the dictionary, "
+                            "BINARY, JSON or XML (B/J/X)? \n> ")
+
         # Call send_dictionary function to send a dictionary to the server
         send_dictionary(client_socket, dictionary, data_format)
 
     elif command == "F":
-        encrypt = input("[ENCRYPTION] Are you sending an encrypted file? Use ´TRUE´ for ´Encrypted´ and "
-                        "´FALSE´ for ´decrypted´ \n> ")
+        encrypt = input("[ENCRYPTION] Are you sending an encrypted file? Use ´T´ for ´Encrypted´ and "
+                        "´F´ for ´decrypted´ \n> ")
 
         # Call send_file function to send a file to the server
         send_file(client_socket, "../samples/file_sample.txt", encrypt)
