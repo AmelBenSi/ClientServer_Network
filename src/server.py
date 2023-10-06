@@ -1,5 +1,6 @@
 import socket
 import threading
+import sys
 import pickle
 import json
 import xml.etree.ElementTree as ET
@@ -17,9 +18,18 @@ KEY = b"YourOwnSecretKey"
 NONCE = b"YourOwnSecretNce"
 
 # create an INET, STREAMing socket to listen for incoming connections
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# Bind the server socket to the specified address and port
-server_socket.bind(SERVER_ADDR)
+try:
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+except socket.error as e:
+    print(f"[ERROR] Error creating socket: {e}")
+    sys.exit(1)
+
+try:
+    # Bind the server socket to the specified address and port
+    server_socket.bind(SERVER_ADDR)
+except socket.error as e:
+    print(f"[ERROR] Socket binding failed with error: {e}")
+    sys.exit(1)
 
 
 # Funtion to handle dictionaries sent in different formats
@@ -89,19 +99,31 @@ def handle_data(received_data, data_info):
 # Function to handle a connected client
 def handle_client(client_socket, client_addr):
     print(f"[NEW CONNECTION] {client_addr} is connected to the server")
-    # # Receive and decode the size of sent data from the client
+
+    # Receive and decode the size of sent data from the client
     data_size = int(client_socket.recv(BUFFER).decode())
-    # Receive and decode information about the data format and type
-    data_info = client_socket.recv(8).decode()
+
+    try:
+        # Receive and decode information about the data format and type
+        data_info = client_socket.recv(8).decode()
+    except socket.error as msg:
+        print(f"[ERROR] Error receiving data: {msg}")
+        sys.exit(1)
+
     # Initialize an empty 'received_data' bytes object to store the received data
     received_data = b""
+
     # Create a progress bar using tqdm to track the data reception progress
     progress = tqdm.tqdm(unit="B", unit_scale=True, unit_divisor=1000, total=int(data_size))
 
     # Continue receiving data from the client in chunks until the entire data is received
     while True:
-        # Receive a chunk of data from the client (maximum size determined by BUFFER)
-        chunk_of_data = client_socket.recv(BUFFER)
+        try:
+            # Receive a chunk of data from the client (maximum size determined by BUFFER)
+            chunk_of_data = client_socket.recv(BUFFER)
+        except socket.error as msg:
+            print(f"[ERROR] Error receiving data: {msg}")
+            sys.exit(1)
         # Append the received chunk to the "received_data" bytes object
         received_data += chunk_of_data
         # Update the progress bar to reflect the amount of data received
@@ -109,19 +131,26 @@ def handle_client(client_socket, client_addr):
         # Exit the loop, if all data has been received
         if len(chunk_of_data) < BUFFER:
             break
-
     # Call the 'handle_data' function to process the received data
     handle_data(received_data, data_info)
 
 
 # Function to start the sever and handle client connections
 def start():
-    # Listen for incoming connections
-    server_socket.listen()
+    try:
+        # Listen for incoming connections
+        server_socket.listen()
+    except socket.error as msg:
+        print(f"[ERROR] Socket listen failed with error: {msg}")
+        sys.exit(1)
 
     while True:
-        # Accept connection when a client connects
-        client_socket, client_addr = server_socket.accept()
+        try:
+            # Accept connection when a client connects
+            client_socket, client_addr = server_socket.accept()
+        except socket.error as msg:
+            print(f"[ERROR] Error accepting connections from client: {msg}")
+            sys.exit(1)
         # Create a thread to handle each client connection
         thread = threading.Thread(target=handle_client, args=(client_socket, client_addr))
         thread.start()
