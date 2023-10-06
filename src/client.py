@@ -21,27 +21,23 @@ NONCE = b"YourOwnSecretNce"
 # This function should set a dictionary to binary, JSON or XML format, and
 # send it to the server
 def send_dictionary(socket, dictionary, data_format):
-    serialized_dict = ""
-    dict_size = sys.getsizeof(dictionary)
-    socket.send(str(dict_size).encode())
+    try:
+        serialized_dict = ""
+        dict_size = sys.getsizeof(dictionary)
+        socket.send(str(dict_size).encode())
 
-    # B for BINARY
-    if data_format == "B":
-        serialized_dict = pickle.dumps(dictionary)
-        socket.send(f"SEND_D|{data_format}".encode())
-        socket.sendall(serialized_dict)
+        if data_format == "B":
+            serialized_dict = pickle.dumps(dictionary)
+        elif data_format == "J":
+            serialized_dict = json.dumps(dictionary)
+        elif data_format == "X":
+            serialized_dict = dict2xml(dictionary, wrap='root', indent="   ")
 
-    # J for JSON
-    elif data_format == "J":
-        serialized_dict = json.dumps(dictionary)
-        socket.send(f"SEND_D|{data_format}".encode())
-        socket.sendall(serialized_dict.encode())
-
-    # X for XML
-    elif data_format == "X":
-        serialized_dict = dict2xml(dictionary, wrap='root', indent="   ")
         socket.send(f"SEND_D|{data_format}".encode())
         socket.sendall(serialized_dict.encode())
+
+    except (pickle.PickleError, json.JSONDecodeError, Exception) as e:
+        print(f"Error sending dictionary: {e}")
 
 
 # This function should provide the option to encrypt a file, and
