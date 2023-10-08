@@ -8,7 +8,7 @@ import sys
 
 
 # Import the functions to be tested from the server code
-from server import handle_dict, handle_file
+from src.server import handle_dict, handle_file
 
 # Constants for testing
 PORT = 8080
