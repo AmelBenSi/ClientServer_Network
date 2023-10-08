@@ -1,0 +1,20 @@
+ClientServer:
+│   directory_tree.txt
+│   LICENSE
+│   README.md
+│   requirements.txt
+│
+├───samples
+│       dict_sample.py
+│       file_sample.txt
+│
+├───src
+│       client.py
+│       server.py
+│
+└───tests
+        test_client.py
+        test_client_big.py
+
+
+
