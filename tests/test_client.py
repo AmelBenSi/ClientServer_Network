@@ -2,7 +2,7 @@ import unittest
 import os
 import socket
 from unittest.mock import Mock, patch
-from client import send_dictionary, send_file
+from src.client import send_dictionary, send_file
 
 
 class TestSendFunctions(unittest.TestCase):

@@ -1,7 +1,7 @@
 import unittest
 import socket
 from unittest.mock import Mock
-from client import send_dictionary
+from src.client import send_dictionary
 
 
 class TestSendFunctions(unittest.TestCase):
