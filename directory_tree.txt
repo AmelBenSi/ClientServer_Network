@@ -15,6 +15,7 @@ ClientServer:
 └───tests
         test_client.py
         test_client_big.py
+        test_server.py
 
 
 
